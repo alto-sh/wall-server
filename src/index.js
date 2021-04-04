@@ -15,6 +15,11 @@ const URL = 'http://localhost:8080';
 const urls = {};
 const history = [];
 
+const MIMES_BY_EXT = {
+    'js': 'text/javascript',
+    'css': 'text/css'
+};
+
 app.use(cors());
 app.use(express.json());
 app.options('*', cors());
@@ -33,20 +38,49 @@ app.get('/canvas/:url', (req, res) => {
 });
 
 app.get('/fetch/:url', (req, res) => {
-    let url = req.params.url.replace(/^\/\//, '');
-    url = url.startsWith('http') ? url : 'http://' + url;
+    let { url } = req.params;
+    url = (url.startsWith('http://') || url.startsWith('https://')) ? url : `http://${url}`;
+    const [ prot, other ] = url.split('://');
+    let [ domain, ...path ] = other.split('/');
+    if (domain.split('.').length == '2') {
+        domain = 'www.' + domain;
+    }
+    url = `${prot}://${domain}/${path.join('/')}`;
     const base = url.match(/^https?:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+/)[0];
-    fetch(url).then(r => {
-        const mime = r.headers.get('Content-Type').split(';')[0];
+    fetch(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'
+        },
+        redirect: 'follow'
+    }).then(r => {
+        const mimeArray = r.headers.get('Content-Type').split(';');
+        const mime = mimeArray.length > 0 ? mimeArray[0] : (MIMES_BY_EXT[url.split('.')[-1]] || 'text/plain');
         res.setHeader('Content-Type', mime);
+        const dir = url.endsWith('/') ? url : `${prot}://${domain}/${path.slice(-1).join('/')}`;
         if (mime.startsWith('text')) {
             r.text().then(text => {
                 const data = text
-                    .replace(/(src|href)="(.*?)"/g, (_, attr, val) => {
-                        const path = val.match(/^(\/?[a-zA-Z0-9_%.-])+$/) ? base + '/' + val : val;
-                        return (
-                            `${attr}="${URL}/fetch/${encodeURIComponent(path)}"`
-                        );
+                    .replace(/(src|href|srcset)="(.*?)"/g, (_, attr, val) => {
+                        const getPath = (val) => {
+                            return /^https?:\/\//i.test(val) ? val : val.startsWith('/') ? dir + val : `${base}/${val}`;
+                        };
+                        if (attr == 'srcset') {
+                            const parts = val.split(' ').map(getPath);
+                            return (
+                                `${attr}="${parts.join(' ')}"` 
+                            );
+                        } else {
+                            if (val.startsWith('data:')) {
+                                return (
+                                    `${attr}="${val}"`
+                                );
+                            }
+                            const path = getPath(val);
+                            console.log(path);
+                            return (
+                                `${attr}="${URL}/fetch/${encodeURIComponent(path)}"`
+                            );
+                        }
                     });
                 res.send(data);
             });
