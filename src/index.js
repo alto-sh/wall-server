@@ -62,7 +62,7 @@ app.get('/fetch/:url', (req, res) => {
                 const data = text
                     .replace(/(src|href|srcset)="(.*?)"/g, (_, attr, val) => {
                         const getPath = (val) => {
-                            return /^https?:\/\//i.test(val) ? val : val.startsWith('/') ? dir + val : `${base}/${val}`;
+                            return /^https?:\/\//i.test(val) ? val : val.startsWith('/') ? dir + val.slice(1) : `${base}/${val}`;
                         };
                         if (attr == 'srcset') {
                             const parts = val.split(' ').map(getPath);
