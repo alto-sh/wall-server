@@ -10,7 +10,7 @@ const io = require('socket.io')(http, {
     }
 });
 
-const URL = 'http://localhost:8080';
+const { URL, PORT } = process.env;
 
 const urls = {};
 const history = [];
@@ -114,7 +114,7 @@ app.post('/history/add', (req, res) => {
     });
 });
 
-http.listen(8080, () => {
+http.listen(parseInt(PORT), () => {
     console.log('Server up');
 });
 
