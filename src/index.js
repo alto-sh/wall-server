@@ -45,7 +45,7 @@ app.get('/fetch/:url', (req, res) => {
     if (domain.split('.').length == '2') {
         domain = 'www.' + domain;
     }
-    url = `${prot}://${domain}/${path.join('/')}`;
+    url = `${prot}://${domain}` + `/${path.join('/')}`.replace(/\/\//g, '/');
     const base = url.match(/^https?:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+/)[0];
     fetch(url, {
         headers: {
