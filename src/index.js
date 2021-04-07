@@ -46,7 +46,10 @@ app.get('/fetch/:url', (req, res) => {
         domain = 'www.' + domain;
     }
     url = `${prot}://${domain}` + `/${path.join('/')}`.replace(/\/\//g, '/');
-    const base = url.match(/^https?:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z0-9-]+/)[0];
+    if (!/\/[^\/]+?$/.test(url)) {
+        url += '/';
+    }
+    const base = url.match(/^https?:\/\/([a-zA-Z0-9-]+\.)+([a-zA-Z0-9-]+\/)+/)[0];
     fetch(url, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'
